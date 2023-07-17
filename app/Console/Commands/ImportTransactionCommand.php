@@ -25,7 +25,7 @@ class ImportTransactionCommand extends Command {
         $i=0;
         foreach ($data['channel']['item'] as $row) {
             $link = str_replace('https', 'http', $row['link']);
-            $page = Http::get($link);
+            $page = Http::withoutVerifying()->get($link,['verify' => false ]);
 
             if ($page->ok()) {
                 unset($link);
