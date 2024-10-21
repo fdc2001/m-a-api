@@ -19,7 +19,7 @@ $router->get('/', function () use ($router) {
 });
 
 $router->group(['prefix' => '/api/v1'], function () use ($router){
-    $router->group(['middleware' => \App\Http\Middleware\AuthWordpressMiddleware::class], function () use ($router) {
+    $router->group(['middleware' => App\Http\Middleware\AuthWordpressMiddleware::class], function () use ($router) {
         $router->group(['prefix' => '/configs'], function () use ($router){
             $router->get('/orbit_test', 'ConfigsController@orbit_test');
             $router->get('/{field}', 'ConfigsController@show');

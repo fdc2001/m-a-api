@@ -238,7 +238,7 @@ class TransactionsController extends Controller {
 
 
     public function showLatest() {
-        $data = Transaction::where('approved','=', 1)->with('industrySector', 'member')->latest()->limit(3)->get();
+        $data = Transaction::where('approved','=', 1)->with('industrySector', 'member')->orderBy('date_transaction', 'desc')->limit(3)->get();
         $response = [];
         foreach ($data as $transaction){
             $response[] = [
@@ -369,7 +369,7 @@ class TransactionsController extends Controller {
 
         $member_id = Members::where('name', '=', $member)->first();
         if($member_id== null) {
-            return $response = [
+            return  [
                 'all' => [],
                 'buySide' => [],
                 'sellSide' => [],
@@ -384,11 +384,41 @@ class TransactionsController extends Controller {
             $q->where('approved','=', 1)->where('member_id', '=', $member_id);
         })->get();
 
+        $data = [];
+        foreach ($all as $item) {
+            $transactionLimited = [];
+            $item = $item->toArray();
+
+            foreach ($item['transactions_limited'] as $transaction) {
+                if ($transaction['member_id'] == $member_id)
+                $transactionLimited[] = $transaction;
+            }
+
+            $item['transactions_limited'] = $transactionLimited;
+            $data[] = $item;
+        }
+        $all = $data;
+
         $buySideData = IndustrySector::with('transactionsLimited')->whereHas('transactionsLimited', function ($q) use($member_id, $buySide){
             $q->where('approved','=', 1)->where(function ($q) use($member_id, $buySide){
                 $q->whereRaw('UPPER(side) IN (?)', [$buySide])->where('member_id', '=', $member_id);
             });
         })->get();
+
+        $data = [];
+        foreach ($buySideData as $item) {
+            $transactionLimited = [];
+            $item = $item->toArray();
+
+            foreach ($item['transactions_limited'] as $transaction) {
+                if ($transaction['member_id'] == $member_id)
+                    $transactionLimited[] = $transaction;
+            }
+
+            $item['transactions_limited'] = $transactionLimited;
+            $data[] = $item;
+        }
+        $buySideData = $data;
 
         $sellSideData = IndustrySector::with('transactionsLimited')->whereHas('transactionsLimited', function ($q) use($member_id, $sellSide){
             $q->where('approved','=', 1)->where(function ($q) use($member_id, $sellSide){
@@ -396,11 +426,41 @@ class TransactionsController extends Controller {
             });
         })->get();
 
+        $data = [];
+        foreach ($sellSideData as $item) {
+            $transactionLimited = [];
+            $item = $item->toArray();
+
+            foreach ($item['transactions_limited'] as $transaction) {
+                if ($transaction['member_id'] == $member_id)
+                    $transactionLimited[] = $transaction;
+            }
+
+            $item['transactions_limited'] = $transactionLimited;
+            $data[] = $item;
+        }
+        $sellSideData = $data;
+
         $mboData = IndustrySector::with('transactionsLimited')->whereHas('transactionsLimited', function ($q) use($member_id, $mbo){
             $q->where('approved','=', 1)->where(function ($q) use($member_id, $mbo){
                 $q->whereRaw('UPPER(side) IN (?)', [$mbo])->where('member_id', '=', $member_id);
             });
         })->get();
+
+        $data = [];
+        foreach ($mboData as $item) {
+            $transactionLimited = [];
+            $item = $item->toArray();
+
+            foreach ($item['transactions_limited'] as $transaction) {
+                if ($transaction['member_id'] == $member_id)
+                    $transactionLimited[] = $transaction;
+            }
+
+            $item['transactions_limited'] = $transactionLimited;
+            $data[] = $item;
+        }
+        $mboData = $data;
 
         $capitalRaisesData = IndustrySector::with('transactionsLimited')->whereHas('transactionsLimited', function ($q) use($member_id, $capitalRaises){
             $q->where('approved','=', 1)->where(function ($q) use($member_id, $capitalRaises){
@@ -408,11 +468,41 @@ class TransactionsController extends Controller {
             });
         })->get();
 
+        $data = [];
+        foreach ($capitalRaisesData as $item) {
+            $transactionLimited = [];
+            $item = $item->toArray();
+
+            foreach ($item['transactions_limited'] as $transaction) {
+                if ($transaction['member_id'] == $member_id)
+                    $transactionLimited[] = $transaction;
+            }
+
+            $item['transactions_limited'] = $transactionLimited;
+            $data[] = $item;
+        }
+        $capitalRaisesData = $data;
+
         $restructuringData = IndustrySector::with('transactionsLimited')->whereHas('transactionsLimited', function ($q) use($member_id, $restructuring){
             $q->where('approved','=', 1)->where(function ($q) use($member_id, $restructuring){
                 $q->whereRaw('UPPER(side) IN (?)', [$restructuring])->where('member_id', '=', $member_id);
             });
         })->get();
+
+        $data = [];
+        foreach ($restructuringData as $item) {
+            $transactionLimited = [];
+            $item = $item->toArray();
+
+            foreach ($item['transactions_limited'] as $transaction) {
+                if ($transaction['member_id'] == $member_id)
+                    $transactionLimited[] = $transaction;
+            }
+
+            $item['transactions_limited'] = $transactionLimited;
+            $data[] = $item;
+        }
+        $restructuringData = $data;
 
 
         $response = [
