@@ -67,7 +67,7 @@ class TransactionsController extends Controller {
             'buyer_logo' => $request->buyer_logo,
             'type_of_transaction' => $request->type_of_transaction,
             'industry_sector' => $industrySector->id,
-            'detailed_business_desc' => $request->detailed_business_desc,
+            'detailed_business_desc' => stripslashes($request->detailed_business_desc),
             'transaction_size' => $request->transaction_size,
             'member_id' => $memberID->id,
             'deal_manager' => $request->deal_manager,
@@ -287,7 +287,7 @@ class TransactionsController extends Controller {
 
         $transaction->type_of_transaction = $request->type_of_transaction;
         $transaction->industry_sector = $request->industry_sector;
-        $transaction->detailed_business_desc = $request->detailed_business_desc;
+        $transaction->detailed_business_desc = stripslashes(base64_decode($request->detailed_business_desc));
         $transaction->transaction_size = $request->transaction_size;
         $transaction->member_id = $request->member_id;
         $transaction->deal_manager = $request->deal_manager;
@@ -331,7 +331,7 @@ class TransactionsController extends Controller {
         $transaction->keyphrase = Str::slug($request->tombstone_title);
         $transaction->date_transaction = Carbon::createFromFormat('Y-m-d', $request->date_transaction);
         $transaction->industry_sector = $request->industry_sector;
-        $transaction->detailed_business_desc = $request->detailed_business_desc;
+        $transaction->detailed_business_desc = base64_decode($request->detailed_business_desc);
         $transaction->transaction_size = $request->transaction_size;
         $transaction->member_id = $request->member_id;
         $transaction->deal_manager = $request->deal_manager;
