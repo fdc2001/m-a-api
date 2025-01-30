@@ -15,6 +15,6 @@ class IndustrySector extends Model {
     public function transactions() {
         return $this->hasMany(Transaction::class, 'industry_sector', 'id')->where('approved','=',1)
             ->select('type_of_transaction', 'industry_sector', 'slug', 'tombstone_bottom_image', 'tombstone_top_image', 'member_id', 'approved','date_transaction','side','tombstone_title')
-            ->with('member', 'industrySector');
+            ->with('member', 'industrySector')->orderBy('date_transaction', 'desc');
     }
 }

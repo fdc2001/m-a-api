@@ -7,6 +7,7 @@ use App\Models\Members;
 use App\Models\Regions;
 use App\Models\Transaction;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -53,6 +54,7 @@ class TransactionsController extends Controller {
             'tombstone_top_image' => ['required','string'],
             'date_transaction' => ['required','date'],
             'tombstone_bottom_image' => ['required','string'],
+            'notes' => ['nullable', 'string'],
             'side' => ['required','string']
         ]);
 
@@ -67,7 +69,7 @@ class TransactionsController extends Controller {
             'buyer_logo' => $request->buyer_logo,
             'type_of_transaction' => $request->type_of_transaction,
             'industry_sector' => $industrySector->id,
-            'detailed_business_desc' => stripslashes($request->detailed_business_desc),
+            'detailed_business_desc' => stripslashes(base64_decode($request->detailed_business_desc)),
             'transaction_size' => $request->transaction_size,
             'member_id' => $memberID->id,
             'deal_manager' => $request->deal_manager,
@@ -77,6 +79,7 @@ class TransactionsController extends Controller {
             'tombstone_top_image' => $request->tombstone_top_image,
             'tombstone_bottom_image' => $request->tombstone_bottom_image,
             'date_transaction' => $request->date_transaction,
+            'notes' => $request->notes,
             'side' => $request->side,
             'slug' => $slug
         ]);
@@ -98,6 +101,7 @@ class TransactionsController extends Controller {
             'industrySector' => $data->industrySector,
             'tombstone_top_image' => $data->tombstone_top_image,
             'tombstone_bottom_image'=> $data->tombstone_bottom_image,
+            'notes' => $data->notes,
             'type_of_transaction' => $data->type_of_transaction,
             'detailed_business_desc' => $data->detailed_business_desc,
             'slug' => $data->slug,
@@ -271,6 +275,7 @@ class TransactionsController extends Controller {
             'tombstone_bottom_image' => ['required','string'],
             'approved' => ['required','string'],
             'side' => ['required','string'],
+            'notes' => ['nullable', 'string'],
             'orbit_id' => ['string'],
         ]);
 
@@ -297,6 +302,7 @@ class TransactionsController extends Controller {
         $transaction->tombstone_bottom_image = $request->tombstone_bottom_image;
         $transaction->side = $request->side;
         $transaction->orbit_id = $request->orbit_id??'1';
+        $transaction->notes = $request->notes;
         $transaction->update();
 
 
@@ -318,6 +324,7 @@ class TransactionsController extends Controller {
             'tombstone_bottom_image' => ['required','string'],
             'approved' => ['required','string'],
             'side' => ['required','string'],
+            'notes' => ['nullable', 'string'],
             'orbit_id' => ['string'],
             'date_transaction' => ['string','date_format:Y-m-d'],
         ]);
@@ -340,6 +347,7 @@ class TransactionsController extends Controller {
         $transaction->tombstone_top_image = $request->tombstone_top_image;
         $transaction->tombstone_bottom_image = $request->tombstone_bottom_image;
         $transaction->side = $request->side;
+        $transaction->notes = $request->notes;
         $transaction->orbit_id = $request->orbit_id??'1';
         $transaction->slug = Str::slug($request->tombstone_title);
         $transaction->save();
@@ -394,6 +402,7 @@ class TransactionsController extends Controller {
         $query = IndustrySector::with('transactionsLimited')->whereHas('transactionsLimited', function ($query) use ($member_id, $sides) {
             $query->where('approved', '=', 1);
             $query->where('member_id', '=', $member_id);
+            $query->orderBy('date_transaction', 'desc');
 
             if (!empty($sides)) {
                 $query->whereRaw('UPPER(side) IN (?)', [$sides]);
@@ -414,6 +423,7 @@ class TransactionsController extends Controller {
             $item['transactions_limited'] = $transactionLimited;
             $results[] = $item;
         }
+
 
         return $results;
     }
@@ -452,53 +462,79 @@ class TransactionsController extends Controller {
         }
         $member_id = $member_id->id;
 
-        switch ($side){
+        switch ($side) {
             case 'all':
                 $data = IndustrySector::with(['transactions' => function ($q) use ($member_id) {
-                    $q->where('approved','=', 1)->where('member_id', '=', $member_id);
+                    $q->where('approved', '=', 1)
+                        ->where('member_id', '=', $member_id)
+                        ->orderBy('date_transaction', 'desc');
                 }])->get();
                 break;
             case 'buySide':
                 $data = IndustrySector::with(['transactions' => function ($q) use ($buySide, $member_id) {
-                    $q->where('approved','=', 1)->where(function ($q) use($member_id, $buySide){
-                        $q->whereRaw('UPPER(side) IN (?)', [$buySide])->where('member_id', '=', $member_id);
-                    });
+                    $q->where('approved', '=', 1)
+                        ->where(function ($q) use ($member_id, $buySide) {
+                            $q->whereRaw('UPPER(side) IN (?)', [$buySide])
+                                ->where('member_id', '=', $member_id);
+                        })
+                        ->orderBy('date_transaction', 'desc');
                 }])->get();
                 break;
             case 'sellSide':
                 $data = IndustrySector::with(['transactions' => function ($q) use ($sellSide, $member_id) {
-                    $q->where('approved','=', 1)->where(function ($q) use($member_id, $sellSide){
-                        $q->whereRaw('UPPER(side) IN (?)', [$sellSide])->where('member_id', '=', $member_id);
-                    });
+                    $q->where('approved', '=', 1)
+                        ->where(function ($q) use ($member_id, $sellSide) {
+                            $q->whereRaw('UPPER(side) IN (?)', [$sellSide])
+                                ->where('member_id', '=', $member_id);
+                        })
+                        ->orderBy('date_transaction', 'desc');
                 }])->get();
                 break;
             case 'mbo':
                 $data = IndustrySector::with(['transactions' => function ($q) use ($mbo, $member_id) {
-                    $q->where('approved','=', 1)->where(function ($q) use($member_id, $mbo){
-                        $q->whereRaw('UPPER(side) IN (?)', [$mbo])->where('member_id', '=', $member_id);
-                    });
+                    $q->where('approved', '=', 1)
+                        ->where(function ($q) use ($member_id, $mbo) {
+                            $q->whereRaw('UPPER(side) IN (?)', [$mbo])
+                                ->where('member_id', '=', $member_id);
+                        })
+                        ->orderBy('date_transaction', 'desc');
                 }])->get();
                 break;
             case 'capitalRaises':
                 $data = IndustrySector::with(['transactions' => function ($q) use ($capitalRaises, $member_id) {
-                    $q->where('approved','=', 1)->where(function ($q) use($member_id, $capitalRaises){
-                        $q->whereRaw('UPPER(side) IN (?)', [$capitalRaises])->where('member_id', '=', $member_id);
-                    });
+                    $q->where('approved', '=', 1)
+                        ->where(function ($q) use ($member_id, $capitalRaises) {
+                            $q->whereRaw('UPPER(side) IN (?)', [$capitalRaises])
+                                ->where('member_id', '=', $member_id);
+                        })
+                        ->orderBy('date_transaction', 'desc');
                 }])->get();
                 break;
             case 'restructuring':
                 $data = IndustrySector::with(['transactions' => function ($q) use ($restructuring, $member_id) {
-                    $q->where('approved','=', 1)->where(function ($q) use($member_id, $restructuring){
-                        $q->whereRaw('UPPER(side) IN (?)', [$restructuring])->where('member_id', '=', $member_id);
-                    });
+                    $q->where('approved', '=', 1)
+                        ->where(function ($q) use ($member_id, $restructuring) {
+                            $q->whereRaw('UPPER(side) IN (?)', [$restructuring])
+                                ->where('member_id', '=', $member_id);
+                        })
+                        ->orderBy('date_transaction', 'desc');
                 }])->get();
                 break;
             default:
                 $data = IndustrySector::with(['transactions' => function ($q) use ($member_id) {
-                    $q->where('approved','=', 1)->where('member_id', '=', $member_id);
+                    $q->where('approved', '=', 1)
+                        ->where('member_id', '=', $member_id)
+                        ->orderBy('date_transaction', 'desc');
                 }])->get();
                 break;
         }
+
+        $data = $data->filter(function ($item) {
+            return $item->transactions->isNotEmpty();
+        })->sortByDesc(function ($item) {
+            return $item->transactions->first()->date_transaction;
+        });
+
         return $data;
     }
 
